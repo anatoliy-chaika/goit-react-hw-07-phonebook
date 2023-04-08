@@ -1,9 +1,11 @@
-import { useDispatch } from 'react-redux';
-import { addContact } from 'components/redux/contactsSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from 'components/redux/operations';
+import { selectContacts } from 'components/redux/selectors';
+import Notiflix from 'notiflix';
 
 import PropTypes from 'prop-types';
 import { Formik } from 'formik';
-import { nanoid } from 'nanoid';
+
 import * as Yup from 'yup';
 import {
   Field,
@@ -32,9 +34,17 @@ const ContactSchema = Yup.object().shape({
 
 export const ContactForm = () => {
   const dispatch = useDispatch();
+  const contacts = useSelector(selectContacts);
 
-  const handleSubmit = (value, id) => {
-    dispatch(addContact((id = nanoid()), value.name, value.number));
+  const handleSubmit = values => {
+    const isAlreadyInContacts = contacts.some(
+      contact => contact.name.toLowerCase() === values.name.toLowerCase()
+    );
+    if (isAlreadyInContacts) {
+      Notiflix.Report.failure(`${values.name}: is already in your contacts`);
+      return;
+    }
+    dispatch(addContact({ name: values.name, phone: values.number }));
   };
 
   return (
@@ -44,7 +54,6 @@ export const ContactForm = () => {
       onSubmit={(values, actions) => {
         handleSubmit({
           ...values,
-          id: nanoid(),
         });
         actions.resetForm();
       }}
